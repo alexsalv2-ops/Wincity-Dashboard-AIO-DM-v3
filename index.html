@@ -690,6 +690,25 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
   </div>
 </div>
 
+<!-- MODAL LOGIN -->
+<div id="login-modal" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.22);width:340px;max-width:95vw;padding:32px 28px 24px;text-align:center">
+    <div style="font-size:26px;font-weight:900;font-style:italic;color:#c0120e;letter-spacing:-1px;margin-bottom:4px">Win<span style="color:#f9d84a;-webkit-text-stroke:0.5px #c0120e">city</span></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b68;margin-bottom:24px">Gestione Contabile</div>
+    <div id="login-banner" style="display:none;background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:14px">Password errata.</div>
+    <input type="password" id="login-pwd" placeholder="Password amministratore"
+      style="width:100%;height:42px;padding:0 14px;font-size:14px;font-family:inherit;border:1px solid #c8c8c4;border-radius:8px;background:#f5f5f3;color:#1a1a18;margin-bottom:14px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()"
+      style="width:100%;height:42px;background:#c0120e;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">
+      Accedi
+    </button>
+    <div style="margin-top:16px;font-size:11px;color:#6b6b68">
+      <span id="readonly-link" style="cursor:pointer;text-decoration:underline;color:#3b82f6" onclick="entraSolaLettura()">Entra in sola lettura →</span>
+    </div>
+  </div>
+</div>
+
 <script>
 const DB_NAME = 'database.json';
 const FIELDS  = ['sp-g','sp-p','vt-g','vt-p','aw-g','aw-p','so-g','so-p','vo-g','vo-p','co-g','co-p','po-g','po-p','conti'];
@@ -704,6 +723,46 @@ const CHART_CATS = [
   {key:'po',label:'Poker Online',    g:'po-g',p:'po-p'},
 ];
 const DEFAULT_SETTINGS = {tSp:20,tVt:20,tAw:20,tSo:20,tVo:20,tCo:20,tPo:20,nome:'',codice:'',sogliaMin:0,target:0};
+
+/* ── Autenticazione ── */
+const ADMIN_PWD = 'SisalTrani';
+let isAdmin = false;
+
+function doLogin(){
+  const val = document.getElementById('login-pwd').value;
+  if(val === ADMIN_PWD){
+    isAdmin = true;
+    document.getElementById('login-modal').style.display = 'none';
+    applicaModalita();
+  } else {
+    document.getElementById('login-banner').style.display = 'block';
+    document.getElementById('login-pwd').value = '';
+    document.getElementById('login-pwd').focus();
+  }
+}
+
+function entraSolaLettura(){
+  isAdmin = false;
+  document.getElementById('login-modal').style.display = 'none';
+  applicaModalita();
+}
+
+function applicaModalita(){
+  // Nasconde tab Inserimento e Impostazioni per utenti sola lettura
+  const navItems = document.querySelectorAll('.nav-item');
+  const mbnItems = document.querySelectorAll('.mbnav');
+  if(!isAdmin){
+    // Sidebar desktop
+    navItems.forEach(el => {
+      if(el.textContent.includes('Inserimento') || el.textContent.includes('Impostazioni'))
+        el.style.display = 'none';
+    });
+    // Bottom nav mobile
+    document.getElementById('mbn-inserimento').style.display = 'none';
+    document.getElementById('mbn-impostazioni').style.display = 'none';
+    // Nasconde bottoni modifica/elimina nello storico (gestito in renderStorico)
+  }
+}
 
 let db=[], settings={...DEFAULT_SETTINGS};
 let dbLoaded=false;
@@ -1456,7 +1515,7 @@ function renderStorico(){
       const neColor=ne>0?'#15803d':ne<0?'#dc2626':'inherit';
       const dFmt=new Date(r.data+'T00:00:00').toLocaleDateString('it-IT');
       html+=`<tr style="background:${rowBg}">
-        <td><span style="cursor:pointer;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:600" onclick="modificaRecord('${r.data}')" title="Clicca per modificare">${dFmt}</span></td>
+        <td>${isAdmin ? `<span style="cursor:pointer;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:600" onclick="modificaRecord('${r.data}')" title="Clicca per modificare">${dFmt}</span>` : `<span style="font-weight:600">${dFmt}</span>`}</td>
         <td class="r">${euro(fv(r,'sp-g'))}</td><td class="r">${euro(fv(r,'sp-p'))}</td>
         <td class="r">${euro(fv(r,'vt-g'))}</td><td class="r">${euro(fv(r,'vt-p'))}</td>
         <td class="r">${euro(fv(r,'aw-g'))}</td><td class="r">${euro(fv(r,'aw-p'))}</td>
@@ -1468,7 +1527,7 @@ function renderStorico(){
         <td class="r" style="font-weight:600;color:${neColor}">${euro(ne)}</td>
         <td class="r">${intl(fv(r,'conti'))}</td>
         <td style="white-space:nowrap">
-          <button class="btn sm danger" onclick="eliminaRecord('${r.data}')">Elimina</button>
+          ${isAdmin ? `<button class="btn sm danger" onclick="eliminaRecord('${r.data}')">Elimina</button>` : ''}
         </td>
       </tr>`;
     });
@@ -1765,6 +1824,8 @@ tfoot tr td{font-weight:700;background:#f5f5f3;border-top:2px solid #c8c8c4}
   }
   renderDashboard();
   updateDbInfo();
+  // Mostra modal login dopo caricamento DB
+  document.getElementById('login-modal').style.display='flex';
 })();
 </script>
 </body>
