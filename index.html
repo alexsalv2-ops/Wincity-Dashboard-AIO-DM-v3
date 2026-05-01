@@ -633,11 +633,19 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
       <div class="card" style="margin-top:16px">
         <div class="card-title">Database &amp; Backup</div>
         <div id="db-info" style="font-size:13px;color:var(--muted);line-height:2;margin-bottom:14px">—</div>
-        <div class="banner info" style="margin-bottom:14px"><b>I dati si salvano automaticamente</b> su JSONbin (cloud).<br>Usa <b>Esporta</b> per scaricare un backup JSON locale.</div>
-        <div class="btn-row" style="margin-top:0">
+        <div class="banner info" style="margin-bottom:14px"><b>I dati si salvano automaticamente</b> su GitHub (cloud).<br>Usa <b>Esporta</b> per scaricare un backup JSON locale.</div>
+        <div class="sfield" style="margin-bottom:14px;max-width:520px">
+          <label style="font-size:12px;font-weight:500;color:var(--muted)">&#128273; Token GitHub (necessario per salvare)</label>
+          <input type="password" id="set-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+            style="height:36px;padding:0 10px;font-size:13px;font-family:inherit;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text)">
+          <span class="hint" style="font-size:11px;color:var(--muted)">Salvato solo su questo browser. Gli altri utenti non ne hanno bisogno (solo lettura).</span>
+        </div>
+        <div class="btn-row" style="margin-top:0;flex-wrap:wrap">
+          <button class="btn primary" onclick="salvaToken()">&#128190; Salva token</button>
           <button class="btn primary" onclick="esportaJson()">&#11015; Esporta backup JSON</button>
           <button class="btn"         onclick="importaJson()">&#11014; Importa backup JSON</button>
         </div>
+        <div id="token-status" style="margin-top:10px;font-size:12px"></div>
       </div>
     </div>
 
@@ -700,18 +708,29 @@ const DEFAULT_SETTINGS = {tSp:20,tVt:20,tAw:20,tSo:20,tVo:20,tCo:20,tPo:20,nome:
 let db=[], settings={...DEFAULT_SETTINGS};
 let dbLoaded=false;
 
-/* ── JSONbin.io ── */
-const JSONBIN_ID  = '69e35c4caaba88219711081e';
-const JSONBIN_KEY = '$2a$10$jAaJYYt4WSh2fhnow3RnV.0e7sXQKb4fA1ookE3pZAVyw..2LoIn.';
-const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
+/* ── GitHub Storage ── */
+// Configura questi valori nelle Impostazioni dell'app
+const GH_REPO  = 'alexsalv2-ops/Wincity-Dashboard-AIO-DM-v3';
+const GH_FILE  = 'data.json';
+const GH_API   = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_FILE;
+
+function ghToken(){ return localStorage.getItem('wincity_gh_token')||''; }
+let ghFileSha = null; // SHA dell'ultimo file letto, necessario per aggiornare
 
 async function jbLoad(){
-  const resp = await fetch(JSONBIN_URL + '/latest', {
-    headers: {'X-Master-Key': JSONBIN_KEY}
+  // Lettura pubblica — non richiede token
+  const resp = await fetch(GH_API + '?t=' + Date.now(), {
+    headers: { 'Accept': 'application/vnd.github.v3+json' }
   });
-  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  if(resp.status === 404){
+    // File non ancora creato — db vuoto, ok
+    db=[]; settings={...DEFAULT_SETTINGS}; ghFileSha=null; return;
+  }
+  if(!resp.ok) throw new Error('GitHub HTTP ' + resp.status);
   const json = await resp.json();
-  const data = json.record;
+  ghFileSha = json.sha;
+  const text = atob(json.content.replace(/\n/g,''));
+  const data = JSON.parse(text);
   if(Array.isArray(data)){
     db=data; settings={...DEFAULT_SETTINGS};
   } else {
@@ -721,12 +740,26 @@ async function jbLoad(){
 }
 
 async function jbSave(){
-  const resp = await fetch(JSONBIN_URL, {
+  const token = ghToken();
+  if(!token) throw new Error('Token GitHub non configurato. Vai in Impostazioni → Database e inserisci il token.');
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify({records:db, settings}, null, 2))));
+  const body = { message: 'Aggiornamento dati ' + new Date().toISOString().slice(0,10), content };
+  if(ghFileSha) body.sha = ghFileSha;
+  const resp = await fetch(GH_API, {
     method: 'PUT',
-    headers: {'X-Master-Key': JSONBIN_KEY, 'Content-Type': 'application/json'},
-    body: JSON.stringify({records:db, settings})
+    headers: {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
   });
-  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({}));
+    throw new Error('GitHub ' + resp.status + (err.message?' — '+err.message:''));
+  }
+  const result = await resp.json();
+  ghFileSha = result.content.sha; // aggiorna sha per il prossimo salvataggio
   return true;
 }
 /* ── import / export ── */
@@ -804,7 +837,7 @@ function mobClose(){
 async function writeDb(bannerTarget){
   const target=bannerTarget||'banner-ins';
   try{ await jbSave(); return true; }catch(e){
-    banner(target,'err','<b>Errore salvataggio JSONbin:</b> '+e.message);
+    banner(target,'err','<b>Errore salvataggio GitHub:</b> '+e.message);
     return false;
   }
 }
@@ -1482,8 +1515,31 @@ function resetImpostazioni(){
 }
 function updateDbInfo(){
   const el=document.getElementById('db-info');
+  const hasToken = !!ghToken();
+  el.innerHTML=`Storage: <strong>GitHub (cloud)</strong>&nbsp;&nbsp;Token: <strong style="color:${hasToken?'#15803d':'#c0120e'}">${hasToken?'✓ configurato':'✗ non configurato'}</strong><br>Registrazioni: <strong>${db.length}</strong><br>Prima registrazione: <strong>${db.length?new Date(db[0].data+'T00:00:00').toLocaleDateString('it-IT'):'—'}</strong><br>Ultima registrazione: <strong>${db.length?new Date(db[db.length-1].data+'T00:00:00').toLocaleDateString('it-IT'):'—'}</strong><br>Agenzia: <strong>${settings.nome||'—'}</strong>&nbsp;&nbsp;Codice: <strong>${settings.codice||'—'}</strong>`;
+  // Mostra token corrente mascherato nel campo
+  const inp=document.getElementById('set-gh-token');
+  if(inp && !inp.value && hasToken) inp.placeholder='Token già configurato (●●●●●●●●)';
+}
 
-  el.innerHTML=`Storage: <strong>JSONbin (cloud)</strong><br>Registrazioni: <strong>${db.length}</strong><br>Prima registrazione: <strong>${db.length?new Date(db[0].data+'T00:00:00').toLocaleDateString('it-IT'):'—'}</strong><br>Ultima registrazione: <strong>${db.length?new Date(db[db.length-1].data+'T00:00:00').toLocaleDateString('it-IT'):'—'}</strong><br>Agenzia: <strong>${settings.nome||'—'}</strong>&nbsp;&nbsp;Codice: <strong>${settings.codice||'—'}</strong>`;}
+function salvaToken(){
+  const val=document.getElementById('set-gh-token').value.trim();
+  const statusEl=document.getElementById('token-status');
+  if(!val){
+    statusEl.innerHTML='<span style="color:#b91c1c">Inserisci il token prima di salvare.</span>';
+    return;
+  }
+  if(!val.startsWith('ghp_') && !val.startsWith('github_pat_')){
+    statusEl.innerHTML='<span style="color:#b45309">⚠ Il token sembra non valido. Dovrebbe iniziare con ghp_ o github_pat_</span>';
+  } else {
+    statusEl.innerHTML='<span style="color:#15803d">✓ Token salvato correttamente in questo browser.</span>';
+  }
+  localStorage.setItem('wincity_gh_token', val);
+  document.getElementById('set-gh-token').value='';
+  document.getElementById('set-gh-token').placeholder='Token già configurato (●●●●●●●●)';
+  updateDbInfo();
+  setTimeout(()=>statusEl.innerHTML='',4000);
+}
 
 /* PDF Export */
 let pdfMode='single';
@@ -1695,7 +1751,7 @@ tfoot tr td{font-weight:700;background:#f5f5f3;border-top:2px solid #c8c8c4}
     t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   initCurInputs();
   buildChLegend();
-  banner('banner-dash','info','<b>Connessione a JSONbin…</b>');
+  banner('banner-dash','info','<b>Connessione a GitHub…</b>');
   try{
     await jbLoad();
     dbLoaded=true; setDbBadge('ok');
@@ -1705,7 +1761,7 @@ tfoot tr td{font-weight:700;background:#f5f5f3;border-top:2px solid #c8c8c4}
     setTimeout(()=>banner('banner-dash','',''),4000);
   }catch(e){
     setDbBadge('err');
-    banner('banner-dash','err','<b>Errore connessione JSONbin:</b> '+e.message);
+    banner('banner-dash','err','<b>Errore connessione GitHub:</b> '+e.message);
   }
   renderDashboard();
   updateDbInfo();
