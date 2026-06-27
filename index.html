@@ -546,7 +546,7 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
         <div class="form-grid">
           <div class="field full">
             <label>Data di riferimento</label>
-            <input type="date" id="inp-date" style="max-width:200px">
+            <input type="date" id="inp-date" style="max-width:200px" onchange="resetOCR()">
           </div>
           <div class="form-sep">Sport Agenzia</div>
           <div class="field"><label>Sport — emessi (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-emessi" placeholder="0,00" oninput="calcolaNettiSport()"></div>
@@ -1387,6 +1387,12 @@ async function salva(){
     renderDashboard();
   }
 }
+function resetOCR(){
+  const ocrS=document.getElementById('ocr-status');if(ocrS){ocrS.style.display='none';ocrS.innerHTML='';}
+  const ocrP=document.getElementById('ocr-preview');if(ocrP)ocrP.style.display='none';
+  const ocrI=document.getElementById('ocr-input');if(ocrI)ocrI.value='';
+  const ocrImg=document.getElementById('ocr-img');if(ocrImg)ocrImg.src='';
+}
 function parseNum(id){const v=(document.getElementById(id)?.value||'0').replace(',','.');return parseFloat(v)||0;}
 function fmtNum(v){return v.toFixed(2).replace('.',',');}
 function calcolaNettiSport(){
@@ -1479,6 +1485,7 @@ async function eliminaRecord(data){
 function modificaRecord(data){
   const r=db.find(rec=>rec.data===data);
   if(!r) return;
+  resetOCR();
   // Popola il form inserimento con i dati del record
   document.getElementById('inp-date').value=r.data;
   CUR_FIELDS.forEach(k=>{
