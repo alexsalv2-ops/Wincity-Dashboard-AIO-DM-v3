@@ -524,20 +524,52 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
     <div id="pg-inserimento" class="page">
       <div class="page-header"><h2>Inserimento dati</h2><p>Compila i campi della giornata e premi Salva. Se la data esiste verrà aggiornata.</p></div>
       <div id="banner-ins"></div>
+
+      <!-- OCR SIMP -->
+      <div class="card" style="margin-bottom:16px;border:2px dashed var(--accent)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:22px">📷</span>
+          <div>
+            <div style="font-weight:700;font-size:15px">Importa da foto SIMP</div>
+            <div style="font-size:12px;color:var(--muted)">Scatta una foto al Saldo Cassa Agenzia — Sport e Virtual si compilano automaticamente</div>
+          </div>
+        </div>
+        <input type="file" id="ocr-input" accept="image/*" capture="environment" style="display:none" onchange="elaboraFotoSIMP(this)">
+        <button class="btn primary" onclick="document.getElementById('ocr-input').click()" style="width:100%">📷 Scatta / Carica foto SIMP</button>
+        <div id="ocr-status" style="margin-top:10px;font-size:13px;display:none"></div>
+        <div id="ocr-preview" style="margin-top:10px;display:none">
+          <img id="ocr-img" style="max-width:100%;border-radius:8px;border:1px solid var(--border)">
+        </div>
+      </div>
+
       <div class="card">
         <div class="form-grid">
           <div class="field full">
             <label>Data di riferimento</label>
             <input type="date" id="inp-date" style="max-width:200px">
           </div>
-          <div class="form-sep">Agenzia</div>
-          <div class="field"><label>Sport — giocato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-g" placeholder="0,00"></div>
-          <div class="field"><label>Sport — pagato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-p" placeholder="0,00"></div>
-          <div class="field"><label>Virtual — giocato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vt-g" placeholder="0,00"></div>
-          <div class="field"><label>Virtual — pagato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vt-p" placeholder="0,00"></div>
+          <div class="form-sep">Sport Agenzia</div>
+          <div class="field"><label>Sport — emessi (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-emessi" placeholder="0,00" oninput="calcolaNettiSport()"></div>
+          <div class="field"><label>Sport — annulli (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-annulli" placeholder="0,00" oninput="calcolaNettiSport()"></div>
+          <div class="field"><label>Sport — pagati (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-pagati" placeholder="0,00" oninput="calcolaNettiSport()"></div>
+          <div class="field"><label>Sport — rimborsati (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="sp-rimborsati" placeholder="0,00" oninput="calcolaNettiSport()"></div>
+          <div class="field full" style="background:var(--surface2,#f0f4ff);border-radius:8px;padding:10px;display:flex;gap:24px;flex-wrap:wrap">
+            <span style="font-size:13px">&#9654; Giocato netto: <b id="sp-g-display">0,00</b> €</span>
+            <span style="font-size:13px">&#9654; Pagato netto: <b id="sp-p-display">0,00</b> €</span>
+            <input type="hidden" id="sp-g"><input type="hidden" id="sp-p">
+          </div>
+          <div class="form-sep">Virtual Agenzia</div>
+          <div class="field"><label>Virtual — emessi (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vt-emessi" placeholder="0,00" oninput="calcolaNettiVirtual()"></div>
+          <div class="field"><label>Virtual — annulli (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vt-annulli" placeholder="0,00" oninput="calcolaNettiVirtual()"></div>
+          <div class="field"><label>Virtual — pagati (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vt-pagati" placeholder="0,00" oninput="calcolaNettiVirtual()"></div>
+          <div class="field"><label>Virtual — rimborsati (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vt-rimborsati" placeholder="0,00" oninput="calcolaNettiVirtual()"></div>
+          <div class="field full" style="background:var(--surface2,#f0f4ff);border-radius:8px;padding:10px;display:flex;gap:24px;flex-wrap:wrap">
+            <span style="font-size:13px">&#9654; Giocato netto: <b id="vt-g-display">0,00</b> €</span>
+            <span style="font-size:13px">&#9654; Pagato netto: <b id="vt-p-display">0,00</b> €</span>
+            <input type="hidden" id="vt-g"><input type="hidden" id="vt-p">
+          </div>
           <div class="field"><label>AWP / VLT — giocato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="aw-g" placeholder="0,00"></div>
           <div class="field"><label>AWP / VLT — pagato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="aw-p" placeholder="0,00"></div>
-          <div class="form-sep">Online</div>
           <div class="field"><label>Sport online — giocato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="so-g" placeholder="0,00"></div>
           <div class="field"><label>Sport online — pagato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="so-p" placeholder="0,00"></div>
           <div class="field"><label>Virtual online — giocato (&#8364;)</label><input type="text" inputmode="decimal" class="cur-inp" id="vo-g" placeholder="0,00"></div>
@@ -1355,9 +1387,82 @@ async function salva(){
     renderDashboard();
   }
 }
+function parseNum(id){const v=(document.getElementById(id)?.value||'0').replace(',','.');return parseFloat(v)||0;}
+function fmtNum(v){return v.toFixed(2).replace('.',',');}
+function calcolaNettiSport(){
+  const g=Math.max(0,parseNum('sp-emessi')-parseNum('sp-annulli'));
+  const p=parseNum('sp-pagati')+parseNum('sp-rimborsati');
+  document.getElementById('sp-g-display').textContent=fmtNum(g);
+  document.getElementById('sp-p-display').textContent=fmtNum(p);
+  document.getElementById('sp-g').value=fmtNum(g);
+  document.getElementById('sp-p').value=fmtNum(p);
+}
+function calcolaNettiVirtual(){
+  const g=Math.max(0,parseNum('vt-emessi')-parseNum('vt-annulli'));
+  const p=parseNum('vt-pagati')+parseNum('vt-rimborsati');
+  document.getElementById('vt-g-display').textContent=fmtNum(g);
+  document.getElementById('vt-p-display').textContent=fmtNum(p);
+  document.getElementById('vt-g').value=fmtNum(g);
+  document.getElementById('vt-p').value=fmtNum(p);
+}
+async function elaboraFotoSIMP(input){
+  if(!input.files||!input.files[0])return;
+  const file=input.files[0];
+  const status=document.getElementById('ocr-status');
+  const preview=document.getElementById('ocr-preview');
+  const img=document.getElementById('ocr-img');
+  const reader=new FileReader();
+  reader.onload=e=>{img.src=e.target.result;preview.style.display='block';};
+  reader.readAsDataURL(file);
+  status.style.display='block';
+  status.innerHTML='⏳ Analisi foto in corso...';
+  try{
+    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:base64}},
+          {type:'text',text:`Questa è una foto del portale SIMP Match-Point di un'agenzia scommesse italiana.
+Estrai SOLO questi valori dalla tabella "Saldo Cassa Agenzia":
+- Sport Quota Fissa: colonna IMPORTO sotto "Emessi", "Annulli", "Pagati", "Rimborsati"
+- Virtual Race: colonna IMPORTO sotto "Emessi", "Annulli", "Pagati", "Rimborsati"
+Rispondi SOLO con JSON senza markdown:
+{"sport_emessi":0.00,"sport_annulli":0.00,"sport_pagati":0.00,"sport_rimborsati":0.00,"virtual_emessi":0.00,"virtual_annulli":0.00,"virtual_pagati":0.00,"virtual_rimborsati":0.00}`}
+        ]}]
+      })
+    });
+    const data=await response.json();
+    const text=data.content[0].text.trim();
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const fmt=v=>(v||0).toFixed(2).replace('.',',');
+    document.getElementById('sp-emessi').value=fmt(parsed.sport_emessi);
+    document.getElementById('sp-annulli').value=fmt(parsed.sport_annulli);
+    document.getElementById('sp-pagati').value=fmt(parsed.sport_pagati);
+    document.getElementById('sp-rimborsati').value=fmt(parsed.sport_rimborsati);
+    document.getElementById('vt-emessi').value=fmt(parsed.virtual_emessi);
+    document.getElementById('vt-annulli').value=fmt(parsed.virtual_annulli);
+    document.getElementById('vt-pagati').value=fmt(parsed.virtual_pagati);
+    document.getElementById('vt-rimborsati').value=fmt(parsed.virtual_rimborsati);
+    calcolaNettiSport();calcolaNettiVirtual();
+    const spG=(parsed.sport_emessi||0)-(parsed.sport_annulli||0);
+    const spP=(parsed.sport_pagati||0)+(parsed.sport_rimborsati||0);
+    const vtG=(parsed.virtual_emessi||0)-(parsed.virtual_annulli||0);
+    const vtP=(parsed.virtual_pagati||0)+(parsed.virtual_rimborsati||0);
+    status.innerHTML=`✅ <b>Dati importati!</b><br>Sport: Giocato ${fmt(spG)} / Pagato ${fmt(spP)}<br>Virtual: Giocato ${fmt(vtG)} / Pagato ${fmt(vtP)}<br><span style="color:var(--muted);font-size:11px">Verifica i valori prima di salvare</span>`;
+  }catch(err){status.innerHTML='❌ Errore: '+err.message;status.style.color='red';}
+}
+
 function resetForm(){
-  CUR_FIELDS.forEach(k=>{document.getElementById(k).value='';});
+  CUR_FIELDS.forEach(k=>{const el=document.getElementById(k);if(el)el.value='';});
   const contiEl=document.getElementById('conti');if(contiEl)contiEl.value='';
+  ['sp-emessi','sp-annulli','sp-pagati','sp-rimborsati','vt-emessi','vt-annulli','vt-pagati','vt-rimborsati'].forEach(k=>{const el=document.getElementById(k);if(el)el.value='';});
+  ['sp-g-display','sp-p-display','vt-g-display','vt-p-display'].forEach(k=>{const el=document.getElementById(k);if(el)el.textContent='0,00';});
+  const ocrS=document.getElementById('ocr-status');if(ocrS)ocrS.style.display='none';
+  const ocrP=document.getElementById('ocr-preview');if(ocrP)ocrP.style.display='none';
+  const ocrI=document.getElementById('ocr-input');if(ocrI)ocrI.value='';
   const t=new Date();
   document.getElementById('inp-date').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
   banner('banner-ins','','');
