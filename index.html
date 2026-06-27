@@ -1441,6 +1441,8 @@ Rispondi SOLO con JSON senza markdown:
       })
     });
     const data=await response.json();
+    if(data.error){throw new Error('API: '+JSON.stringify(data.error));}
+    if(!data.content||!data.content[0]){throw new Error('Risposta inattesa: '+JSON.stringify(data));}
     const text=data.content[0].text.trim();
     const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
     const fmt=v=>(v||0).toFixed(2).replace('.',',');
