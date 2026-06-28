@@ -1514,6 +1514,15 @@ function modificaRecord(data){
   });
   const contiEl=document.getElementById('conti');
   if(contiEl) contiEl.value=fv(r,'conti')||'';
+  // Popola i campi Emessi/Pagati con i valori netti già salvati
+  // (Annulli e Rimborsati a zero — i netti sono già calcolati)
+  const spG=fv(r,'sp-g');const spP=fv(r,'sp-p');
+  const vtG=fv(r,'vt-g');const vtP=fv(r,'vt-p');
+  if(spG){document.getElementById('sp-emessi').value=formatCur(spG);document.getElementById('sp-annulli').value='0,00';}
+  if(spP){document.getElementById('sp-pagati').value=formatCur(spP);document.getElementById('sp-rimborsati').value='0,00';}
+  if(vtG){document.getElementById('vt-emessi').value=formatCur(vtG);document.getElementById('vt-annulli').value='0,00';}
+  if(vtP){document.getElementById('vt-pagati').value=formatCur(vtP);document.getElementById('vt-rimborsati').value='0,00';}
+  calcolaNettiSport();calcolaNettiVirtual();
   // Naviga alla pagina inserimento
   nav('inserimento');
   banner('banner-ins','info',`<b>Modifica registrazione del ${new Date(data+'T00:00:00').toLocaleDateString('it-IT')}</b> — apporta le correzioni e premi Salva.`);
