@@ -1453,8 +1453,9 @@ async function elaboraFotoSIMP(input){
 Estrai SOLO questi valori dalla tabella "Saldo Cassa Agenzia":
 - Sport Quota Fissa: colonna IMPORTO sotto "Emessi", "Annulli", "Pagati", "Rimborsati"
 - Virtual Race: colonna IMPORTO sotto "Emessi", "Annulli", "Pagati", "Rimborsati"
+Estrai anche la data visibile nella barra in alto (formato DD-MM-YYYY o DD/MM/YYYY) e convertila in formato YYYY-MM-DD.
 Rispondi SOLO con JSON senza markdown:
-{"sport_emessi":0.00,"sport_annulli":0.00,"sport_pagati":0.00,"sport_rimborsati":0.00,"virtual_emessi":0.00,"virtual_annulli":0.00,"virtual_pagati":0.00,"virtual_rimborsati":0.00}`}
+{"data":"2026-06-28","sport_emessi":0.00,"sport_annulli":0.00,"sport_pagati":0.00,"sport_rimborsati":0.00,"virtual_emessi":0.00,"virtual_annulli":0.00,"virtual_pagati":0.00,"virtual_rimborsati":0.00}`}
         ]}]
       })
     });
@@ -1464,6 +1465,10 @@ Rispondi SOLO con JSON senza markdown:
     const text=data.content[0].text.trim();
     const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
     const fmt=v=>(v||0).toFixed(2).replace('.',',');
+    // Aggiorna data se estratta dall'OCR
+    if(parsed.data){
+      document.getElementById('inp-date').value=parsed.data;
+    }
     document.getElementById('sp-emessi').value=fmt(parsed.sport_emessi);
     document.getElementById('sp-annulli').value=fmt(parsed.sport_annulli);
     document.getElementById('sp-pagati').value=fmt(parsed.sport_pagati);
