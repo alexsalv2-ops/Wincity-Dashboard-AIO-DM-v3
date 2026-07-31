@@ -20,5 +20,16 @@
     "margine": 18223.94,
     "margine_pct": 4.12,
     "data": "2026-07-31"
+  },
+  {
+    "periodo": "01/05/2025 - 31/05/2026",
+    "lordo": 322115.35,
+    "annullato": 3721.83,
+    "rimborsabili": 1.16,
+    "netto": 303959.34,
+    "pagabili": 94.36,
+    "margine": 14434.18,
+    "margine_pct": 4.48,
+    "data": "2026-07-31"
   }
 ]
