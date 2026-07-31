@@ -650,6 +650,10 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
             <button class="btn primary" onclick="applicaMargineManuale()" style="white-space:nowrap">✓ Applica</button>
           </div>
         </div>
+        <div style="margin-top:16px">
+          <button class="btn primary" onclick="salvaRendiconto()" style="width:100%;font-size:16px">💾 Salva rendiconto</button>
+        </div>
+        <div id="banner-rend-save" style="margin-top:10px"></div>
       </div>
 
       <div class="card" id="rend-storico-card" style="display:none">
@@ -1493,6 +1497,25 @@ function renderRendicontoStorico(){
   });
 }
 
+async function salvaRendiconto(){
+  if(!window._rendDatiCorrente){banner('banner-rend-save','err','Nessun dato da salvare. Fotografa prima il rendiconto.');return;}
+  banner('banner-rend-save','','⏳ Salvataggio in corso...');
+  const token=ghToken();
+  if(!token){banner('banner-rend-save','err','Token GitHub non configurato.');return;}
+  try{
+    const parsed=window._rendDatiCorrente;
+    rendDb=rendDb.filter(r=>r.periodo!==parsed.periodo);
+    rendDb.push({...parsed,data:new Date().toISOString().split('T')[0]});
+    rendDb.sort((a,b)=>a.data.localeCompare(b.data));
+    await saveRendDb();
+    renderRendicontoStorico();
+    banner('banner-rend-save','ok','<b>Rendiconto salvato!</b>');
+    setTimeout(()=>banner('banner-rend-save','',''),3000);
+  }catch(e){
+    banner('banner-rend-save','err','Errore: '+e.message);
+  }
+}
+
 function applicaMargineManuale(){
   const val=parseFloat((document.getElementById('rend-margine-manual').value||'0').replace(',','.'));
   if(!val){alert('Inserisci un valore valido');return;}
@@ -1568,14 +1591,11 @@ Rispondi SOLO con JSON senza markdown:
     document.getElementById('rend-margine').textContent='€ '+fmt(parsed.margine);
     const pctEl=document.getElementById('rend-margine-pct');
     if(pctEl) pctEl.textContent=(parsed.margine_pct||0).toFixed(2).replace('.',',')+' %';
+    // Salva in variabile globale per il pulsante manuale
+    window._rendDatiCorrente = parsed;
     document.getElementById('rend-risultati').style.display='block';
-    // Salva nello storico
-    rendDb=rendDb.filter(r=>r.periodo!==parsed.periodo);
-    rendDb.push({...parsed,data:new Date().toISOString().split('T')[0]});
-    rendDb.sort((a,b)=>a.data.localeCompare(b.data));
-    await saveRendDb();
     renderRendicontoStorico();
-    status.innerHTML='✅ Rendiconto importato e salvato!';
+    status.innerHTML='✅ Dati estratti! Verifica i valori e premi <b>Salva rendiconto</b>';
   }catch(err){status.innerHTML='❌ Errore: '+err.message;status.style.color='red';}
 }
 
