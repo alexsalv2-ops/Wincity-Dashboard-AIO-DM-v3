@@ -401,7 +401,8 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
     <button class="mbnav active" id="mbn-dashboard"    onclick="nav('dashboard')">    <span class="mbnav-icon">&#9647;</span>Dashboard</button>
     <button class="mbnav"        id="mbn-inserimento"  onclick="nav('inserimento')">  <span class="mbnav-icon">&#43;</span>Inserimento</button>
     <button class="mbnav"        id="mbn-storico"      onclick="nav('storico')">      <span class="mbnav-icon">&#8801;</span>Storico</button>
-    <button class="mbnav"        id="mbn-impostazioni" onclick="nav('impostazioni')"> <span class="mbnav-icon">&#9881;</span>Impostazioni</button>
+    <button class="mbnav"        id="mbn-rendiconto"   onclick="nav('rendiconto')">   <span class="mbnav-icon"><button class="mbnav"        id="mbn-impostazioni" onclick="nav('impostazioni')"> <span class="mbnav-icon">&#9881;</span>Impostazioni</button>#128202;</span>Rendiconto</button>
+    <button class="mbnav"        id="mbn-impostazioni" onclick="nav('impostazioni')"> <span class="mbnav-icon"><button class="mbnav"        id="mbn-impostazioni" onclick="nav('impostazioni')"> <span class="mbnav-icon">&#9881;</span>Impostazioni</button>#9881;</span>Impostazioni</button>
   </div>
 </div>
 
@@ -433,6 +434,7 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
       <div class="nav-item" onclick="nav('storico')">
         <span class="nav-icon">&#8801;</span> Storico
       </div>
+      <div class="nav-item" onclick="nav('rendiconto')"><span class="nav-icon"><div class="nav-item" onclick="nav('impostazioni')">#128202;</span> Rendiconto</div>
       <div class="nav-item" onclick="nav('impostazioni')">
         <span class="nav-icon">&#9881;</span> Impostazioni
       </div>
@@ -594,6 +596,49 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
       <div class="page-header"><h2>Storico registrazioni</h2><p>Tutte le giornate salvate nel database</p></div>
       <div class="card">
         <div class="tbl-wrap" id="storico-wrap"><div class="empty">Apri prima il database dalla Dashboard.</div></div>
+      </div>
+    </div>
+
+    <!-- RENDICONTO -->
+    <div id="pg-rendiconto" class="page">
+      <div class="page-header"><h2>Rendiconto Sisal</h2><p>Importa i dati ufficiali dal Rendiconto Competenza SIMP fotografando la riga Totale.</p></div>
+      <div id="banner-rend"></div>
+
+      <div class="card" style="border:2px dashed var(--accent);margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:22px">📊</span>
+          <div>
+            <div style="font-weight:700;font-size:15px">Importa Rendiconto Competenza</div>
+            <div style="font-size:12px;color:var(--muted)">Fotografa la riga <b>Totale</b> dell'ultima pagina del Rendiconto Competenza SIMP</div>
+          </div>
+        </div>
+        <input type="file" id="rend-ocr-input" accept="image/*" capture="environment" style="display:none" onchange="elaboraFotoRendiconto(this)">
+        <button class="btn primary" onclick="document.getElementById('rend-ocr-input').click()" style="width:100%">📷 Fotografa riga Totale</button>
+        <div id="rend-ocr-status" style="margin-top:10px;font-size:13px;display:none"></div>
+        <div id="rend-ocr-preview" style="margin-top:10px;display:none">
+          <img id="rend-ocr-img" style="max-width:100%;border-radius:8px;border:1px solid var(--border)">
+        </div>
+      </div>
+
+      <div class="card" id="rend-risultati" style="display:none">
+        <div style="font-weight:700;font-size:15px;margin-bottom:14px">📋 Dati estratti</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><div style="font-size:11px;color:var(--muted)">Periodo</div><div style="font-weight:700" id="rend-periodo">—</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Imp. Lordo</div><div style="font-weight:700" id="rend-lordo">—</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Annullato</div><div style="font-weight:700" id="rend-annullato">—</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Rimborsabili</div><div style="font-weight:700" id="rend-rimborsabili">—</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Imp. Netto</div><div style="font-weight:700" id="rend-netto">—</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Pagabili</div><div style="font-weight:700" id="rend-pagabili">—</div></div>
+        </div>
+        <div style="margin-top:16px;padding:14px;background:var(--accent-bg);border-radius:10px;border:1px solid var(--accent)">
+          <div style="font-size:12px;color:var(--muted)">Margine netto (aggio ufficiale Sisal)</div>
+          <div style="font-size:24px;font-weight:800;color:var(--accent-dk)" id="rend-margine">—</div>
+        </div>
+      </div>
+
+      <div class="card" id="rend-storico-card" style="display:none">
+        <div style="font-weight:700;font-size:15px;margin-bottom:14px">📅 Storico rendiconti</div>
+        <div id="rend-storico-list"></div>
       </div>
     </div>
 
@@ -936,8 +981,8 @@ async function writeDb(bannerTarget){
 /* Navigation */
 function nav(pg){
   document.querySelectorAll('.nav-item').forEach((el,i)=>
-    el.classList.toggle('active',['dashboard','inserimento','storico','impostazioni'][i]===pg));
-  ['dashboard','inserimento','storico','impostazioni'].forEach(p=>{
+    el.classList.toggle('active',['dashboard','inserimento','storico','rendiconto','impostazioni'][i]===pg));
+  ['dashboard','inserimento','storico','rendiconto','impostazioni'].forEach(p=>{
     const b=document.getElementById('mbn-'+p);
     if(b)b.classList.toggle('active',p===pg);
   });
@@ -946,6 +991,7 @@ function nav(pg){
   mobClose();
   if(pg==='dashboard') renderDashboard();
   if(pg==='storico') renderStorico();
+  if(pg==='rendiconto') renderRendicontoStorico();
   if(pg==='impostazioni'){applySettingsToUI();updateDbInfo();}
 }
 
@@ -1387,6 +1433,119 @@ async function salva(){
     renderDashboard();
   }
 }
+/* ===== RENDICONTO ===== */
+let rendDb = [];
+
+async function loadRendDb(){
+  try{
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/rendiconto.json`,
+      {headers:{Authorization:`token ${GH_TOKEN}`}});
+    if(r.ok){const d=await r.json();rendDb=JSON.parse(atob(d.content.replace(/\n/g,'')));}
+  }catch(e){rendDb=[];}
+}
+
+async function saveRendDb(){
+  try{
+    let sha='';
+    const r=await fetch(`https://api.github.com/repos/${GH_REPO}/contents/rendiconto.json`,
+      {headers:{Authorization:`token ${GH_TOKEN}`}});
+    if(r.ok){const d=await r.json();sha=d.sha;}
+    const body={message:'Aggiorna rendiconto',content:btoa(unescape(encodeURIComponent(JSON.stringify(rendDb,null,2))))};
+    if(sha)body.sha=sha;
+    await fetch(`https://api.github.com/repos/${GH_REPO}/contents/rendiconto.json`,
+      {method:'PUT',headers:{Authorization:`token ${GH_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  }catch(e){console.error('Errore salvataggio rendiconto',e);}
+}
+
+function renderRendicontoStorico(){
+  loadRendDb().then(()=>{
+    const list=document.getElementById('rend-storico-list');
+    const card=document.getElementById('rend-storico-card');
+    if(!rendDb.length){card.style.display='none';return;}
+    card.style.display='block';
+    list.innerHTML=rendDb.slice().reverse().map(r=>`
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-weight:700">${r.periodo||r.data}</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-top:4px">
+          <span>Lordo: <b>€${r.lordo}</b></span>
+          <span>Netto: <b>€${r.netto}</b></span>
+          <span>Pagabili: <b>€${r.pagabili}</b></span>
+          <span style="color:${parseFloat(r.margine)>=0?'green':'red'}">Margine: <b>€${r.margine}</b></span>
+        </div>
+      </div>`).join('');
+  });
+}
+
+async function elaboraFotoRendiconto(input){
+  if(!input.files||!input.files[0])return;
+  const file=input.files[0];
+  const status=document.getElementById('rend-ocr-status');
+  const preview=document.getElementById('rend-ocr-preview');
+  const img=document.getElementById('rend-ocr-img');
+  const reader=new FileReader();
+  reader.onload=e=>{img.src=e.target.result;preview.style.display='block';};
+  reader.readAsDataURL(file);
+  status.style.display='block';
+  status.innerHTML='⏳ Analisi rendiconto in corso...';
+  try{
+    const base64=await new Promise((res,rej)=>{
+      const im=new Image();
+      const url=URL.createObjectURL(file);
+      im.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const MAX=1600;let w=im.width,h=im.height;
+        if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+        if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(im,0,0,w,h);
+        URL.revokeObjectURL(url);
+        res(canvas.toDataURL('image/jpeg',0.85).split(',')[1]);
+      };
+      im.onerror=rej;im.src=url;
+    });
+    const response=await fetch('https://turni-proxy.alexsalv567.workers.dev',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
+          {type:'text',text:`Questa è una foto del Rendiconto Competenza del portale SIMP Match-Point.
+Estrai SOLO i valori della riga "Totale" in fondo alla tabella:
+- Imp. Lordo (totale)
+- Annullato (totale)
+- Rimborsabili (totale)
+- Imp. Netto (totale)
+- Pagabili Movimenti (totale, la colonna con i numeri sotto "Pagabili")
+- Margine netto Movimenti (totale, l'ultima colonna con i numeri)
+Estrai anche il periodo (date dal/al visibili nei campi "Dalla data" e "Alla data").
+Rispondi SOLO con JSON senza markdown:
+{"periodo":"01/07/2026 - 31/07/2026","lordo":0.00,"annullato":0.00,"rimborsabili":0.00,"netto":0.00,"pagabili":0.00,"margine":0.00}`}
+        ]}]
+      })
+    });
+    const data=await response.json();
+    if(data.error)throw new Error(JSON.stringify(data.error));
+    if(!data.content||!data.content[0])throw new Error('Risposta inattesa: '+JSON.stringify(data));
+    const parsed=JSON.parse(data.content[0].text.trim().replace(/```json|```/g,'').trim());
+    const fmt=v=>(v||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('rend-periodo').textContent=parsed.periodo||'—';
+    document.getElementById('rend-lordo').textContent='€ '+fmt(parsed.lordo);
+    document.getElementById('rend-annullato').textContent='€ '+fmt(parsed.annullato);
+    document.getElementById('rend-rimborsabili').textContent='€ '+fmt(parsed.rimborsabili);
+    document.getElementById('rend-netto').textContent='€ '+fmt(parsed.netto);
+    document.getElementById('rend-pagabili').textContent='€ '+fmt(parsed.pagabili);
+    document.getElementById('rend-margine').textContent='€ '+fmt(parsed.margine);
+    document.getElementById('rend-risultati').style.display='block';
+    // Salva nello storico
+    rendDb=rendDb.filter(r=>r.periodo!==parsed.periodo);
+    rendDb.push({...parsed,data:new Date().toISOString().split('T')[0]});
+    rendDb.sort((a,b)=>a.data.localeCompare(b.data));
+    await saveRendDb();
+    renderRendicontoStorico();
+    status.innerHTML='✅ Rendiconto importato e salvato!';
+  }catch(err){status.innerHTML='❌ Errore: '+err.message;status.style.color='red';}
+}
+
 function resetOCR(){
   const ocrS=document.getElementById('ocr-status');if(ocrS){ocrS.style.display='none';ocrS.innerHTML='';}
   const ocrP=document.getElementById('ocr-preview');if(ocrP)ocrP.style.display='none';
