@@ -639,6 +639,17 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
           <div style="font-size:12px;color:var(--muted)">Margine netto (aggio ufficiale Sisal)</div>
           <div style="font-size:24px;font-weight:800;color:var(--accent-dk)" id="rend-margine">—</div>
         </div>
+        <div style="margin-top:10px;padding:14px;background:#f5f5f5;border-radius:10px;border:1px solid #ddd">
+          <div style="font-size:12px;color:var(--muted)">Percentuale margine</div>
+          <div style="font-size:20px;font-weight:700;color:#555" id="rend-margine-pct">—</div>
+        </div>
+        <div style="margin-top:14px">
+          <label style="font-size:12px;color:var(--muted)">Correggi margine manualmente (se il valore A non è corretto)</label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <input type="text" inputmode="decimal" id="rend-margine-manual" placeholder="es. 8957,93" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:16px">
+            <button class="btn primary" onclick="applicaMargineManuale()" style="white-space:nowrap">✓ Applica</button>
+          </div>
+        </div>
       </div>
 
       <div class="card" id="rend-storico-card" style="display:none">
@@ -1482,6 +1493,18 @@ function renderRendicontoStorico(){
   });
 }
 
+function applicaMargineManuale(){
+  const val=parseFloat((document.getElementById('rend-margine-manual').value||'0').replace(',','.'));
+  if(!val){alert('Inserisci un valore valido');return;}
+  const fmt=v=>v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('rend-margine').textContent='€ '+fmt(val);
+  // Aggiorna anche nell'ultimo record salvato
+  if(rendDb.length){rendDb[rendDb.length-1].margine=val;saveRendDb();}
+  document.getElementById('rend-margine-manual').value='';
+  banner('banner-rend','ok','<b>Margine aggiornato</b> manualmente.');
+  setTimeout(()=>banner('banner-rend','',''),3000);
+}
+
 async function elaboraFotoRendiconto(input){
   if(!input.files||!input.files[0])return;
   const file=input.files[0];
@@ -1544,7 +1567,7 @@ Rispondi SOLO con JSON senza markdown:
     document.getElementById('rend-pagabili').textContent='€ '+fmt(parsed.pagabili);
     document.getElementById('rend-margine').textContent='€ '+fmt(parsed.margine);
     const pctEl=document.getElementById('rend-margine-pct');
-    if(pctEl) pctEl.textContent='€ '+fmt(parsed.margine_pct||0);
+    if(pctEl) pctEl.textContent=(parsed.margine_pct||0).toFixed(2).replace('.',',')+' %';
     document.getElementById('rend-risultati').style.display='block';
     // Salva nello storico
     rendDb=rendDb.filter(r=>r.periodo!==parsed.periodo);
