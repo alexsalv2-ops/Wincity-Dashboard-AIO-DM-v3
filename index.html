@@ -657,8 +657,24 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
       </div>
 
       <div class="card" id="rend-storico-card" style="display:none">
-        <div style="font-weight:700;font-size:15px;margin-bottom:14px">📅 Storico rendiconti</div>
-        <div id="rend-storico-list"></div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">📅 Storico rendiconti</div>
+        <div id="rend-anno-selector" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <button onclick="cambiaAnnoRend(-1)" style="border:none;background:none;font-size:20px;cursor:pointer">◀</button>
+          <span id="rend-anno-label" style="font-weight:700;font-size:16px">2026</span>
+          <button onclick="cambiaAnnoRend(1)" style="border:none;background:none;font-size:20px;cursor:pointer">▶</button>
+        </div>
+        <div id="rend-griglia-mesi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
+        <div id="rend-dettaglio-mese" style="display:none;padding:14px;background:var(--accent-bg);border-radius:10px;border:1px solid var(--accent)">
+          <div style="font-weight:700;margin-bottom:8px" id="rend-det-periodo"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+            <div>Lordo: <b id="rend-det-lordo"></b></div>
+            <div>Annullato: <b id="rend-det-annullato"></b></div>
+            <div>Netto: <b id="rend-det-netto"></b></div>
+            <div>Pagabili: <b id="rend-det-pagabili"></b></div>
+          </div>
+          <div style="margin-top:10px;font-size:18px;font-weight:800;color:var(--accent-dk)">Margine: <span id="rend-det-margine"></span></div>
+        </div>
+        <div id="rend-storico-list" style="display:none"></div>
       </div>
     </div>
 
@@ -1478,22 +1494,52 @@ async function saveRendDb(){
   }catch(e){console.error('Errore salvataggio rendiconto',e);}
 }
 
+let _rendAnno = new Date().getFullYear();
+const MESI_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+function cambiaAnnoRend(dir){
+  _rendAnno += dir;
+  document.getElementById('rend-anno-label').textContent = _rendAnno;
+  aggiornaGrigliaMesi();
+}
+
+function aggiornaGrigliaMesi(){
+  const griglia = document.getElementById('rend-griglia-mesi');
+  if(!griglia) return;
+  griglia.innerHTML = MESI_IT.map((nome, i) => {
+    const mese = String(i+1).padStart(2,'0');
+    const r = rendDb.find(x => x.periodo && x.periodo.includes(`/${_rendAnno}`) && x.periodo.startsWith(`01/${mese}`));
+    const salvato = !!r;
+    return `<div onclick="${salvato ? `mostraDettaglioMese(${i})` : ''}" style="
+      padding:10px 6px;border-radius:8px;text-align:center;cursor:${salvato?'pointer':'default'};
+      background:${salvato?'#d4edda':'#f0f0f0'};
+      border:2px solid ${salvato?'#28a745':'#ccc'};
+      color:${salvato?'#155724':'#999'};font-weight:${salvato?'700':'400'};font-size:13px">
+      ${nome}${salvato?'<br><span style="font-size:10px">✓</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function mostraDettaglioMese(idx){
+  const mese = String(idx+1).padStart(2,'0');
+  const r = rendDb.find(x => x.periodo && x.periodo.includes(`/${_rendAnno}`) && x.periodo.startsWith(`01/${mese}`));
+  if(!r) return;
+  const fmt = v => Number(v||0).toLocaleString('it-IT',{minimumFractionDigits:2});
+  document.getElementById('rend-det-periodo').textContent = r.periodo;
+  document.getElementById('rend-det-lordo').textContent = '€'+fmt(r.lordo);
+  document.getElementById('rend-det-annullato').textContent = '€'+fmt(r.annullato);
+  document.getElementById('rend-det-netto').textContent = '€'+fmt(r.netto);
+  document.getElementById('rend-det-pagabili').textContent = '€'+fmt(r.pagabili);
+  document.getElementById('rend-det-margine').textContent = '€'+fmt(r.margine);
+  document.getElementById('rend-dettaglio-mese').style.display='block';
+}
+
 function renderRendicontoStorico(){
   loadRendDb().then(()=>{
-    const list=document.getElementById('rend-storico-list');
     const card=document.getElementById('rend-storico-card');
-    if(!rendDb.length){card.style.display='none';return;}
-    card.style.display='block';
-    list.innerHTML=rendDb.slice().reverse().map(r=>`
-      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="font-weight:700">${r.periodo||r.data}</div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-top:4px">
-          <span>Lordo: <b>€${r.lordo}</b></span>
-          <span>Netto: <b>€${r.netto}</b></span>
-          <span>Pagabili: <b>€${r.pagabili}</b></span>
-          <span style="color:${parseFloat(r.margine)>=0?'green':'red'}">Margine: <b>€${r.margine}</b></span>
-        </div>
-      </div>`).join('');
+    card.style.display = rendDb.length ? 'block' : 'none';
+    document.getElementById('rend-anno-label').textContent = _rendAnno;
+    aggiornaGrigliaMesi();
   });
 }
 
