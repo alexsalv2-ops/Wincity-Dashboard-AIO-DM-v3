@@ -526,6 +526,9 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
     <div id="pg-inserimento" class="page">
       <div class="page-header"><h2>Inserimento dati</h2><p>Compila i campi della giornata e premi Salva. Se la data esiste verrà aggiornata.</p></div>
       <div id="banner-ins"></div>
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn primary" onclick="salva()" style="width:100%">&#128190; Salva registrazione</button>
+      </div>
 
       <!-- OCR SIMP -->
       <div class="card" style="margin-bottom:16px;border:2px dashed var(--accent)">
@@ -588,6 +591,7 @@ tr.tot td { font-weight: 700; background: var(--bg); border-top: 1px solid var(-
           <button class="btn" onclick="resetForm()">Azzera campi</button>
           <span class="toast" id="toast-ins"></span>
         </div>
+        <div id="banner-ins-bottom" style="margin-top:10px"></div>
       </div>
     </div>
 
@@ -1429,7 +1433,8 @@ async function salva(){
   const ok=await writeDb();
   if(ok){
     banner('banner-ins','ok',`<b>${isUpdate?'Registrazione aggiornata':'Nuova registrazione salvata'}</b> \u2014 ${new Date(data+'T00:00:00').toLocaleDateString('it-IT')}`);
-    setTimeout(()=>banner('banner-ins','',''),3500);
+    banner('banner-ins-bottom','ok',`<b>${isUpdate?'Registrazione aggiornata':'Nuova registrazione salvata'}</b> \u2014 ${new Date(data+'T00:00:00').toLocaleDateString('it-IT')}`);
+    setTimeout(()=>{banner('banner-ins','','');banner('banner-ins-bottom','','');},3500);
     renderDashboard();
   }
 }
