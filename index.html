@@ -1516,14 +1516,17 @@ async function elaboraFotoRendiconto(input){
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
           {type:'text',text:`Questa è una foto del Rendiconto Competenza del portale SIMP Match-Point.
-Estrai SOLO i valori della riga "Totale" in fondo alla tabella:
-- Imp. Lordo (totale)
-- Annullato (totale)
-- Rimborsabili (totale)
-- Imp. Netto (totale)
-- Pagabili Movimenti (totale, il valore numerico in euro sotto "Pagabili", colonna "Movimenti" - NON la percentuale)
-- Margine netto Movimenti (totale, il valore numerico in euro sotto "Margine netto", colonna "Movimenti" - NON la percentuale %. Il valore sarà un numero grande come 8908.65, NON un numero piccolo come 10.73 che è la percentuale)
-Estrai anche il periodo (date dal/al visibili nei campi "Dalla data" e "Alla data").
+La tabella ha queste colonne in ordine: Imp.Lordo | Annullato | Rimborsabili | Imp.Netto | Imposta unica Movimento | Imposta unica % | Pagabili Movimenti | Pagabili % | Margine netto Movimenti | Margine netto %
+
+Estrai SOLO i valori della riga "Totale" (ultima riga in grassetto):
+- lordo = colonna "Imp. Lordo"
+- annullato = colonna "Annullato"
+- rimborsabili = colonna "Rimborsabili"
+- netto = colonna "Imp. Netto"
+- pagabili = colonna "Pagabili Movimenti" (valore grande in euro, NON la percentuale)
+- margine = colonna "Margine netto Movimenti" (valore grande in euro, NON la percentuale. E' il penultimo numero della riga, prima della percentuale finale)
+
+Estrai anche il periodo dalle date "Dalla data" e "Alla data" nella barra URL o nei filtri in cima.
 Rispondi SOLO con JSON senza markdown:
 {"periodo":"01/07/2026 - 31/07/2026","lordo":0.00,"annullato":0.00,"rimborsabili":0.00,"netto":0.00,"pagabili":0.00,"margine":0.00}`}
         ]}]
